@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { PassportModule } from "@nestjs/passport";
+import { AuthModule } from "@src/auth/auth.module";
 import { MailModule } from "@src/mail/mail.module";
 import { EventBusModule } from "@src/event-bus/event-bus.module";
 import { EventsController } from "./events.controller";
 
 @Module({
-  imports: [ConfigModule.forRoot(), PassportModule, EventBusModule, MailModule],
+  imports: [ConfigModule.forRoot(), AuthModule, EventBusModule, MailModule],
   controllers: [EventsController],
 })
 export class AppModule {}
