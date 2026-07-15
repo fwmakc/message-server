@@ -4,7 +4,7 @@ import { MailService } from "@src/mail/mail.service";
 import {
   EventBusEnvelope,
   EventBusPattern,
-} from "@src/event-bus/event-bus.constants";
+} from "@lms/common";
 
 @Controller()
 export class EventsController {
