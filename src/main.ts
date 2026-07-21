@@ -1,7 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
-import { MicroserviceOptions, Transport } from "@nestjs/microservices";
 import * as Sentry from "@sentry/nestjs";
 import redoc from "redoc-express";
 import { join } from "path";
@@ -33,17 +32,6 @@ async function bootstrap() {
     },
     logger: console,
   });
-
-  // Connect Redis microservice for event bus
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.REDIS,
-    options: {
-      host: process.env.REDIS_HOST || "localhost",
-      port: Number(process.env.REDIS_PORT) || 6379,
-    },
-  });
-
-  await app.startAllMicroservices();
 
   if (process.env.MORGAN_LOG_FORMAT) {
     app.use(morgan(process.env.MORGAN_LOG_FORMAT));
