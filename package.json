@@ -11,7 +11,7 @@
     "lint": "eslint \"src/**/*.ts\" --fix"
   },
   "dependencies": {
-    "@lms/common": "file:../shared/lms-common-1.0.0.tgz",
+    "@core/common": "file:../shared/core-common-1.0.0.tgz",
     "@nestjs-modules/mailer": "^1.9.1",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.3.2",
