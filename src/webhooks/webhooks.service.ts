@@ -1,14 +1,11 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { MailQueueService } from "@src/mail/mail.queue.service";
-
-export interface WebhookEvent {
-  eventId: number;
-  pattern: string;
-  payload: Record<string, any>;
-  source: string;
-  timestamp: string;
-  attempt: number;
-}
+import {
+  WebhookEnvelopeDto,
+  UserRegisteredDto,
+  UserConfirmedDto,
+  PasswordResetDto,
+} from "event-server/contracts";
 
 @Injectable()
 export class WebhooksService {
@@ -16,28 +13,28 @@ export class WebhooksService {
 
   constructor(private readonly mailQueueService: MailQueueService) {}
 
-  async handleEvent(event: WebhookEvent): Promise<void> {
+  async handleEvent(event: WebhookEnvelopeDto): Promise<void> {
     this.logger.log(
       `Received event: ${event.pattern} from ${event.source} (eventId=${event.eventId})`
     );
 
     switch (event.pattern) {
       case "user.registered":
-        await this.onUserRegistered(event);
+        await this.onUserRegistered(event.payload as UserRegisteredDto);
         break;
       case "user.confirmed":
-        await this.onUserConfirmed(event);
+        await this.onUserConfirmed(event.payload as UserConfirmedDto);
         break;
       case "password.reset":
-        await this.onPasswordReset(event);
+        await this.onPasswordReset(event.payload as PasswordResetDto);
         break;
       default:
         this.logger.warn(`No handler for pattern: ${event.pattern}`);
     }
   }
 
-  private async onUserRegistered(event: WebhookEvent): Promise<void> {
-    const { userId, username, email, subject, confirmUrl } = event.payload;
+  private async onUserRegistered(payload: UserRegisteredDto): Promise<void> {
+    const { userId, username, email, subject, confirmUrl } = payload;
 
     if (!confirmUrl) {
       this.logger.log(
@@ -60,13 +57,13 @@ export class WebhooksService {
     );
   }
 
-  private async onUserConfirmed(event: WebhookEvent): Promise<void> {
-    const { userId, username } = event.payload;
+  private async onUserConfirmed(payload: UserConfirmedDto): Promise<void> {
+    const { userId, username } = payload;
     this.logger.log(`User confirmed: userId=${userId}, username=${username}`);
   }
 
-  private async onPasswordReset(event: WebhookEvent): Promise<void> {
-    const { username, email, subject, resetUrl } = event.payload;
+  private async onPasswordReset(payload: PasswordResetDto): Promise<void> {
+    const { username, email, subject, resetUrl } = payload;
 
     this.logger.log(`Queueing password reset email for email=${email}`);
 

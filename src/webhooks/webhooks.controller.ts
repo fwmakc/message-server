@@ -1,6 +1,8 @@
 import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
+import { ApiOperation } from "@nestjs/swagger";
 import { InternalAuthGuard } from "api-server-toolkit/guard";
-import { WebhooksService, WebhookEvent } from "./webhooks.service";
+import { WebhookEnvelopeDto } from "event-server/contracts";
+import { WebhooksService } from "./webhooks.service";
 
 @Controller("webhooks")
 @UseGuards(InternalAuthGuard)
@@ -9,7 +11,8 @@ export class WebhooksController {
 
   @Post("events")
   @HttpCode(HttpStatus.OK)
-  async receiveEvent(@Body() body: WebhookEvent) {
+  @ApiOperation({ summary: "Приём события от event-server" })
+  async receiveEvent(@Body() body: WebhookEnvelopeDto) {
     await this.webhooksService.handleEvent(body);
     return { received: true };
   }

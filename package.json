@@ -32,6 +32,7 @@
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.3.1",
     "ejs": "^3.1.10",
+    "event-server": "github:fwmakc/event-server#00adccd",
     "jwks-rsa": "^3.2.2",
     "morgan": "^1.10.1",
     "multer": "^1.4.4-lts.1",
