@@ -9,7 +9,7 @@ export const getMailConfig = async (
   const port = configService.get<string>("SMTP_PORT");
   const user = configService.get<string>("SMTP_USER");
   const password = configService.get<string>("SMTP_PASSWORD");
-  const secure = configService.get<boolean>("SMTP_SECURE");
+  const secure = configService.get<string>("SMTP_SECURE") === "true";
 
   const senderName = configService.get<string>("SMTP_SENDER_NAME");
   const senderEmail = configService.get<string>("SMTP_SENDER_EMAIL");

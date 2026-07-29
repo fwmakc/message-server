@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
-import { InternalAuthGuard } from "./internal-auth.guard";
+import { InternalAuthGuard } from "api-server-toolkit/guard";
 import { WebhooksService, WebhookEvent } from "./webhooks.service";
 
 @Controller("webhooks")
