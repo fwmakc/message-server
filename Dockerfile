@@ -3,11 +3,15 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 COPY message-server/package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps --ignore-scripts
 
 # Override toolkit with local changes (queue module)
 COPY api-server-toolkit/dist ./node_modules/api-server-toolkit/dist
 COPY api-server-toolkit/src ./node_modules/api-server-toolkit/src
+
+# Override event-server contracts with local pre-built
+COPY event-server/dist/contracts ./node_modules/event-server/dist/contracts
+COPY event-server/package.json ./node_modules/event-server/package.json
 
 COPY message-server/ .
 RUN npx tsc -p tsconfig.build.json
