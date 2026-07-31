@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import axios from "axios";
+import { httpPost } from "api-server-toolkit/helper";
 
 @Injectable()
 export class SubscriberService implements OnApplicationBootstrap {
@@ -32,7 +32,7 @@ export class SubscriberService implements OnApplicationBootstrap {
 
   private async register(retry = 0): Promise<void> {
     try {
-      const response = await axios.post(
+      await httpPost(
         `${this.eventServerUrl}/subscribe`,
         {
           service: "message-server",
