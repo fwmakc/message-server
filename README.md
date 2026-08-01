@@ -244,6 +244,30 @@ npm run migration:fake   # Mark as applied without executing
 
 ---
 
+## Integration into existing infrastructure
+
+**Already have an email service?** message-server provides:
+- DB-backed queue with retry and exponential backoff
+- EJS template rendering
+- Event-driven (subscribes to event-server webhooks)
+
+**Replacing with SQS + SendGrid / Mailgun:**
+1. Replace the mail queue table with SQS
+2. Replace nodemailer with SendGrid/Mailgun API calls
+3. Keep the webhook handler — it receives events from event-server
+
+## Migration
+
+**From a monolith:** message-server was extracted from a monolithic backend. The mail
+queue, templates, and SMTP config all live here.
+
+## AI-friendly documentation
+
+- Swagger UI at `/swagger` — interactive API exploration
+- ReDoc at `/redoc` — readable API documentation
+
+---
+
 ## Port Assignments
 
 | Service | Port |
