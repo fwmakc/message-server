@@ -2,7 +2,7 @@
 
 Email sending, notification dispatch, and event-driven messaging microservice. Uses a persistent DB-backed mail queue with retry, exponential backoff, and automatic cleanup.
 
-Port **3003**. Part of the fwmakc microservices split (Stage 7, Issue #6).
+Port **3003**. Part of the microservices split (Stage 7, Issue #6).
 
 ---
 
