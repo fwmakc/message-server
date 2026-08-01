@@ -9,6 +9,7 @@
     "dev": "nest start --watch",
     "prod": "node dist/main",
     "lint": "eslint \"src/**/*.ts\" --fix",
+    "ai-context": "node node_modules/api-server-toolkit/scripts/generate-service-context.js",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:auto": "npm run typeorm migration:generate -- -d ./src/config/typeorm.config.ts ./src/typeorm/migrations/auto",
     "migration:create": "npm run typeorm migration:create -- -n",
