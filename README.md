@@ -1,8 +1,18 @@
 # Message Server
 
-Email sending, notification dispatch, and event-driven messaging microservice. Uses a persistent DB-backed mail queue with retry, exponential backoff, and automatic cleanup.
+> Email queue with retry, EJS templates, and event-driven subscriber.
 
-Port **3003**. Part of the microservices split (Stage 7, Issue #6).
+## What This Is
+
+A **working scaffold** — not a demo, not a toy. Production-ready email service
+with DB-backed queue, exponential backoff retry, EJS templates, and automatic
+cleanup. Subscribes to event-server for triggered emails (registration,
+password reset, account lifecycle).
+
+Part of a [microservices stack](https://github.com/fwmakc/gateway-server) —
+receives events from event-server via webhooks, sends email via SMTP.
+
+Port **3003**.
 
 ---
 
@@ -208,7 +218,7 @@ message-server:
 
 ---
 
-## Development
+## Quick start
 
 ```bash
 cp .env.example .env
@@ -216,6 +226,9 @@ cp .env.example .env
 npm install
 npm run dev
 ```
+
+Message server runs on port **3003**.
+Swagger UI at `http://localhost:3003/swagger`.
 
 ### TypeORM Migrations
 
@@ -304,6 +317,17 @@ with any frontend framework — your app just triggers events (e.g.,
 - **Migrating from a monolith?** Extract email sending one template at
   a time. Your monolith keeps working; message-server takes over email
   delivery gradually.
+
+## Related Services
+
+| Service | Role | Repo |
+|---------|------|------|
+| event-server | Delivers events to message-server via webhook | [fwmakc/event-server](https://github.com/fwmakc/event-server) |
+| auth-server | Triggers emails (user.registered, password.reset) | [fwmakc/auth-server](https://github.com/fwmakc/auth-server) |
+| api-server | Domain events that may trigger notifications | [fwmakc/api-server](https://github.com/fwmakc/api-server) |
+| api-server-toolkit | Shared library (queue system, guards) | [fwmakc/api-server-toolkit](https://github.com/fwmakc/api-server-toolkit) |
+| gateway-server | Nginx reverse proxy + Docker Compose | [fwmakc/gateway-server](https://github.com/fwmakc/gateway-server) |
+| scaffold | Template for new services | [fwmakc/scaffold](https://github.com/fwmakc/scaffold) |
 
 ---
 
