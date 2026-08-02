@@ -24,6 +24,7 @@ import { MailAttachmentEntity } from "@src/mail/mail-attachment.entity";
         logging: config.get<string>("DB_LOG", "false") === "true",
         migrations: [join(__dirname, "../typeorm/migrations/*{.ts,.js}")],
         migrationsTableName: "migrations_typeorm",
+        migrationsRun: config.get<string>("DB_MIGRATIONS_RUN", "false") === "true",
       }),
     }),
   ],
