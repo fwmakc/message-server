@@ -2,7 +2,25 @@
   "name": "message-server",
   "version": "2.0.0",
   "description": "Message service — email sending, notifications, event-driven messaging",
+  "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "github:fwmakc/message-server"
+  },
+  "keywords": [
+    "nestjs",
+    "email",
+    "smtp",
+    "queue",
+    "retry",
+    "templates",
+    "ejs"
+  ],
+  "bugs": {
+    "url": "https://github.com/fwmakc/message-server/issues"
+  },
+  "homepage": "https://github.com/fwmakc/message-server#readme",
   "license": "MIT",
   "scripts": {
     "build": "nest build",

@@ -1,5 +1,9 @@
 # Message Server
 
+[![Tests](https://github.com/fwmakc/message-server/actions/workflows/test.yml/badge.svg)](https://github.com/fwmakc/message-server/actions/workflows/test.yml)
+[![Version](https://img.shields.io/badge/version-v2.0.0-blue)](https://github.com/fwmakc/message-server/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/fwmakc/message-server/blob/master/LICENSE)
+
 > Email queue with retry, EJS templates, and event-driven subscriber.
 
 ## What This Is
