@@ -1,6 +1,6 @@
 {
   "name": "message-server",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Message service — email sending, notifications, event-driven messaging",
   "private": true,
   "license": "MIT",
