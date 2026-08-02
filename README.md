@@ -261,10 +261,49 @@ npm run migration:fake   # Mark as applied without executing
 **From a monolith:** message-server was extracted from a monolithic backend. The mail
 queue, templates, and SMTP config all live here.
 
-## AI-friendly documentation
+## AI-Friendly Documentation
 
-- Swagger UI at `/swagger` — interactive API exploration
-- ReDoc at `/redoc` — readable API documentation
+This service is designed for AI-assisted development. You can feed context
+to any LLM (ChatGPT, Claude, Cursor, Copilot) and get code that follows
+all conventions — without reading the entire codebase.
+
+### ai-context.md
+Auto-generated structured reference: every controller, route, service,
+entity, and DTO. Run `npm run ai-context` to regenerate.
+
+### Swagger UI
+Interactive API exploration at `/swagger` — inspect webhook endpoints,
+mail queue status, subscriber patterns.
+
+### ReDoc
+Clean, readable documentation at `/redoc` — share with your team.
+
+### Why this matters
+An LLM with `ai-context.md` can generate new EJS email templates, webhook
+handlers, and queue processors that match your existing patterns — without
+studying the codebase.
+
+## Backend-Only — Bring Your Own Frontend
+
+This service handles email delivery and event subscriptions. No frontend
+included. Users never interact with message-server directly — it receives
+events from event-server and sends email via SMTP.
+
+All configuration is via `.env` and EJS templates in `views/`. Integrate
+with any frontend framework — your app just triggers events (e.g.,
+`user.registered`) and message-server handles the email delivery.
+
+## Integrating into existing infrastructure
+
+- **Already have an email service (SendGrid, Mailgun, SES)?** Replace
+  the SMTP transport in the mail service. The queue, retry logic, and
+  event subscription stay the same.
+- **Already have an event system?** Message-server subscribes to
+  event-server via webhooks. Point it at your existing event broker's
+  HTTP output — no code changes needed.
+- **Migrating from a monolith?** Extract email sending one template at
+  a time. Your monolith keeps working; message-server takes over email
+  delivery gradually.
 
 ---
 
