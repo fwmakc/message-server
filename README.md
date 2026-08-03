@@ -4,7 +4,7 @@
 [![Version](https://img.shields.io/badge/version-v0.4.0-blue)](https://github.com/fwmakc/message-server/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/fwmakc/message-server/blob/master/LICENSE)
 
-> Email queue with retry, EJS templates, and event-driven subscriber.
+> Reference implementation: background worker pattern — DB-backed queue, retry/backoff, event subscription.
 
 ## What This Is
 
@@ -17,6 +17,19 @@ Part of a [microservices stack](https://github.com/fwmakc/gateway-server) —
 receives events from event-server via webhooks, sends email via SMTP.
 
 Port **3003**.
+
+---
+
+## Pattern
+
+This service demonstrates the **background worker pattern** in the toolkit stack:
+
+- **DB-backed queue** — `QueueJobEntity` base, `QueueWorker` generic worker
+- **Retry with backoff** — exponential backoff, max attempts, dead-letter handling
+- **Event subscription** — registers webhook with event-server, receives typed payloads
+- **Template rendering** — EJS templates, inline HTML/text generation
+
+Clone this when you need: async work, email/SMS/push delivery, scheduled jobs, queue processing.
 
 ---
 
