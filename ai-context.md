@@ -1,7 +1,7 @@
 # AI Context — message-server
 
 > Auto-generated. Run `npm run ai-context` to regenerate.
-> Generated: 2026-08-11T20:11:16.084Z
+> Generated: 2026-08-12T00:13:23.986Z
 
 ---
 
