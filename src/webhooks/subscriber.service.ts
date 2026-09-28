@@ -12,6 +12,7 @@ export class SubscriberService implements OnApplicationBootstrap {
     "user.registered",
     "user.confirmed",
     "password.reset",
+    "user.two_factor_code",
   ];
 
   constructor(private readonly config: ConfigService) {

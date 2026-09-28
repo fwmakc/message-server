@@ -42,7 +42,7 @@ describe('SubscriberService', () => {
         {
           service: 'message-server',
           url: 'http://message-server:3003/webhooks/events',
-          patterns: ['user.registered', 'user.confirmed', 'password.reset'],
+          patterns: ['user.registered', 'user.confirmed', 'password.reset', 'user.two_factor_code'],
           active: true,
         },
         {

@@ -103,6 +103,41 @@ describe('WebhooksService', () => {
     });
   });
 
+  describe('handleEvent — user.two_factor_code', () => {
+    it('enqueues code email with the code', async () => {
+      await service.handleEvent(
+        makeEvent('user.two_factor_code', {
+          userId: 5,
+          username: 'test@example.com',
+          email: 'test@example.com',
+          code: '123456',
+        }),
+      );
+
+      expect(mailQueueService.enqueueTemplate).toHaveBeenCalledWith(
+        { to: 'test@example.com', subject: 'Your verification code', template: 'code' },
+        { code: '123456' },
+      );
+    });
+
+    it('uses provided subject', async () => {
+      await service.handleEvent(
+        makeEvent('user.two_factor_code', {
+          userId: 6,
+          username: 'test@example.com',
+          email: 'test@example.com',
+          code: '654321',
+          subject: 'Login attempt',
+        }),
+      );
+
+      expect(mailQueueService.enqueueTemplate).toHaveBeenCalledWith(
+        expect.objectContaining({ subject: 'Login attempt' }),
+        { code: '654321' },
+      );
+    });
+  });
+
   describe('handleEvent — user.confirmed', () => {
     it('does NOT send any email', async () => {
       await service.handleEvent(

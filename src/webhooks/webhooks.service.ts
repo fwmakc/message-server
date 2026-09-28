@@ -5,6 +5,7 @@ import {
   UserRegisteredDto,
   UserConfirmedDto,
   PasswordResetDto,
+  UserTwoFactorCodeDto,
 } from "event-server/contracts";
 
 @Injectable()
@@ -27,6 +28,9 @@ export class WebhooksService {
         break;
       case "password.reset":
         await this.onPasswordReset(event.payload as PasswordResetDto);
+        break;
+      case "user.two_factor_code":
+        await this.onUserTwoFactorCode(event.payload as UserTwoFactorCodeDto);
         break;
       default:
         this.logger.warn(`No handler for pattern: ${event.pattern}`);
@@ -74,6 +78,25 @@ export class WebhooksService {
         template: "reset",
       },
       { url: resetUrl }
+    );
+  }
+
+  private async onUserTwoFactorCode(
+    payload: UserTwoFactorCodeDto
+  ): Promise<void> {
+    const { userId, email, code, subject } = payload;
+
+    this.logger.log(
+      `Queueing two-factor code email for userId=${userId}, email=${email}`
+    );
+
+    await this.mailQueueService.enqueueTemplate(
+      {
+        to: email,
+        subject: subject || "Your verification code",
+        template: "code",
+      },
+      { code }
     );
   }
 }

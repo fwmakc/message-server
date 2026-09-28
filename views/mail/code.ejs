@@ -1,0 +1,44 @@
+<div style="
+    font-family: Helvetica, Arial, sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    width: auto;
+    padding: 50px;
+    background: #eee;
+    text-align: center;
+">
+    <div style="
+        padding: 50px 50px 25px;
+        border-radius: 10px;
+        box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+        background-color: #fff;
+        display: inline-block;
+        width: 50%;
+        min-width: 250px;
+    ">
+        <h3>Код подтверждения</h3>
+        <div>
+            <p>Ваш одноразовый код для входа:</p>
+        </div>
+        <div style="
+            padding-top: 20px;
+        ">
+            <p style="
+                font-size: 2.5em;
+                letter-spacing: 0.3em;
+                font-weight: bold;
+                margin: 0;
+            "><%= data.code %></p>
+        </div>
+        <div style="
+            padding-top: 20px;
+        ">
+            <p style="
+                color: grey;
+                font-size: 0.75em;
+            ">
+                * Код действует ограниченное время и одноразовый. Если вы не запрашивали вход — просто проигнорируйте это письмо.
+            </p>
+        </div>
+    </div>
+</div>
