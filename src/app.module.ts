@@ -7,6 +7,7 @@ import { DatabaseModule } from "@src/database/database.module";
 import { MailModule } from "@src/mail/mail.module";
 import { WebhooksModule } from "@src/webhooks/webhooks.module";
 import { HealthModule } from "api-server-toolkit/health";
+import { MetricsModule } from "api-server-toolkit/metrics";
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { HealthModule } from "api-server-toolkit/health";
     MailModule,
     WebhooksModule,
     HealthModule.forRoot("message-server"),
+    MetricsModule.forRoot({ service: "message-server" }),
   ],
   providers: [
     { provide: APP_FILTER, useClass: SentryGlobalFilter },

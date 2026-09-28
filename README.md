@@ -81,8 +81,12 @@ auth-server ──[event]──> event-server ──[webhook]──> message-ser
 | POST | `/mail/send` | — | Enqueue raw email (to/subject/text/html + optional file attachments) |
 | POST | `/mail/send_by_template` | — | Enqueue templated email (options + `data` body + optional attachments) |
 | GET | `/mail/status/:id` | `InternalAuthGuard` | Check queue job status (id, status, attempts, errorMessage) |
+| GET | `/mail/failed?page=&limit=` | `InternalAuthGuard` | Paginated list of failed jobs (recipient, subject, attempts, error) |
+| POST | `/mail/failed/:id/requeue` | `InternalAuthGuard` | Requeue a failed job (fresh attempt budget; 400 if not failed) |
 
 > `/mail/send*` endpoints are `@ApiExcludeController` (hidden from Swagger). Security relies on network isolation — message-server is not exposed in nginx.
+
+**Operator loop:** `GET /mail/failed` → fix SMTP/config → `POST /mail/failed/:id/requeue`.
 
 ### Webhooks
 

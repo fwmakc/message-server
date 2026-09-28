@@ -1,7 +1,7 @@
 # AI Context — message-server
 
 > Auto-generated. Run `npm run ai-context` to regenerate.
-> Generated: 2026-08-12T00:13:23.986Z
+> Generated: 2026-09-28T16:52:19.231Z
 
 ---
 
@@ -23,6 +23,7 @@ Base path: `/webhooks`
 
 - `enqueueEmail(options: MailDto,
     attachments?: MailAttachmentEntity[],): Promise<MailJobEntity>`
+- `requeue(id: number): Promise<MailJobEntity | null>`
 - `enqueueTemplate(options: MailDto,
     payload: object,
     attachments?: MailAttachmentEntity[],): Promise<MailJobEntity>`

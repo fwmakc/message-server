@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-09-28
+
+### Added
+- `GET /mail/failed` — paginated list of failed mail jobs (recipient, subject, attempts, error message).
+- `POST /mail/failed/:id/requeue` — requeue a failed job with a fresh attempt budget (400 for non-failed jobs, 404 for unknown ids). Operator loop: list → fix SMTP/config → requeue.
+- Prometheus `/metrics` endpoint via toolkit `MetricsModule` v0.19.0.
+
 ## [0.4.1] - 2026-09-28
 ### Changed
 - Node.js runtime bumped 22 → 24 LTS: Docker images `node:24-alpine`, CI `node-version: 24`.

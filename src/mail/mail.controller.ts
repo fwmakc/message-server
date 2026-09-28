@@ -3,9 +3,12 @@ import {
   Controller,
   Get,
   NotFoundException,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Post,
+  Query,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -36,6 +39,29 @@ export class MailController {
       errorMessage: job.errorMessage,
       createdAt: job.createdAt,
     };
+  }
+
+  @Get("failed")
+  @UseGuards(InternalAuthGuard)
+  async getFailed(
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.mailQueueService.findFailed(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 20,
+    );
+  }
+
+  @Post("failed/:id/requeue")
+  @UseGuards(InternalAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async requeueFailed(@Param("id", ParseIntPipe) id: number) {
+    const job = await this.mailQueueService.requeue(id);
+    if (!job) {
+      throw new NotFoundException(`Job ${id} not found`);
+    }
+    return { id: job.id, status: job.status, attempts: job.attempts };
   }
 
   @Post("send")
