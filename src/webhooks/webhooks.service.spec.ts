@@ -1,9 +1,9 @@
-import { WebhooksService } from './webhooks.service';
-import { MailQueueService } from '../mail/mail.queue.service';
+import { WebhooksService } from "./webhooks.service";
+import { MailQueueService } from "../mail/mail.queue.service";
 
-describe('WebhooksService', () => {
+describe("WebhooksService", () => {
   let service: WebhooksService;
-  let mailQueueService: jest.Mocked<Pick<MailQueueService, 'enqueueTemplate'>>;
+  let mailQueueService: jest.Mocked<Pick<MailQueueService, "enqueueTemplate">>;
 
   beforeEach(() => {
     mailQueueService = {
@@ -17,52 +17,52 @@ describe('WebhooksService', () => {
       eventId: 1,
       pattern,
       payload,
-      source: 'auth-server',
+      source: "auth-server",
       timestamp: new Date().toISOString(),
       attempt: 1,
     };
   }
 
-  describe('handleEvent — user.registered', () => {
-    it('enqueues template email when confirmUrl is present', async () => {
+  describe("handleEvent — user.registered", () => {
+    it("enqueues template email when confirmUrl is present", async () => {
       await service.handleEvent(
-        makeEvent('user.registered', {
+        makeEvent("user.registered", {
           userId: 1,
-          username: 'test@example.com',
-          email: 'test@example.com',
-          subject: 'Welcome!',
-          confirmUrl: 'https://app.com/confirm?token=abc',
+          username: "test@example.com",
+          email: "test@example.com",
+          subject: "Welcome!",
+          confirmUrl: "https://app.com/confirm?token=abc",
         }),
       );
 
       expect(mailQueueService.enqueueTemplate).toHaveBeenCalledWith(
-        { to: 'test@example.com', subject: 'Welcome!', template: 'register' },
-        { url: 'https://app.com/confirm?token=abc' },
+        { to: "test@example.com", subject: "Welcome!", template: "register" },
+        { url: "https://app.com/confirm?token=abc" },
       );
     });
 
-    it('uses default subject when not provided', async () => {
+    it("uses default subject when not provided", async () => {
       await service.handleEvent(
-        makeEvent('user.registered', {
+        makeEvent("user.registered", {
           userId: 2,
-          username: 'test@example.com',
-          email: 'test@example.com',
-          confirmUrl: 'https://app.com/confirm',
+          username: "test@example.com",
+          email: "test@example.com",
+          confirmUrl: "https://app.com/confirm",
         }),
       );
 
       expect(mailQueueService.enqueueTemplate).toHaveBeenCalledWith(
-        expect.objectContaining({ subject: 'Registration Confirmation' }),
+        expect.objectContaining({ subject: "Registration Confirmation" }),
         expect.any(Object),
       );
     });
 
-    it('does NOT enqueue when confirmUrl is missing (already activated)', async () => {
+    it("does NOT enqueue when confirmUrl is missing (already activated)", async () => {
       await service.handleEvent(
-        makeEvent('user.registered', {
+        makeEvent("user.registered", {
           userId: 3,
-          username: 'test@example.com',
-          email: 'test@example.com',
+          username: "test@example.com",
+          email: "test@example.com",
         }),
       );
 
@@ -70,81 +70,89 @@ describe('WebhooksService', () => {
     });
   });
 
-  describe('handleEvent — password.reset', () => {
-    it('enqueues reset email with resetUrl', async () => {
+  describe("handleEvent — password.reset", () => {
+    it("enqueues reset email with resetUrl", async () => {
       await service.handleEvent(
-        makeEvent('password.reset', {
-          username: 'test@example.com',
-          email: 'test@example.com',
-          subject: 'Reset Your Password',
-          resetUrl: 'https://app.com/reset?token=xyz',
+        makeEvent("password.reset", {
+          username: "test@example.com",
+          email: "test@example.com",
+          subject: "Reset Your Password",
+          resetUrl: "https://app.com/reset?token=xyz",
         }),
       );
 
       expect(mailQueueService.enqueueTemplate).toHaveBeenCalledWith(
-        { to: 'test@example.com', subject: 'Reset Your Password', template: 'reset' },
-        { url: 'https://app.com/reset?token=xyz' },
+        {
+          to: "test@example.com",
+          subject: "Reset Your Password",
+          template: "reset",
+        },
+        { url: "https://app.com/reset?token=xyz" },
       );
     });
 
-    it('uses default subject when not provided', async () => {
+    it("uses default subject when not provided", async () => {
       await service.handleEvent(
-        makeEvent('password.reset', {
-          username: 'test@example.com',
-          email: 'test@example.com',
-          resetUrl: 'https://app.com/reset',
+        makeEvent("password.reset", {
+          username: "test@example.com",
+          email: "test@example.com",
+          resetUrl: "https://app.com/reset",
         }),
       );
 
       expect(mailQueueService.enqueueTemplate).toHaveBeenCalledWith(
-        expect.objectContaining({ subject: 'Password Reset' }),
+        expect.objectContaining({ subject: "Password Reset" }),
         expect.any(Object),
       );
     });
   });
 
-  describe('handleEvent — user.two_factor_code', () => {
-    it('enqueues code email with the code', async () => {
+  describe("handleEvent — user.two_factor_code", () => {
+    it("enqueues code email with the code", async () => {
       await service.handleEvent(
-        makeEvent('user.two_factor_code', {
+        makeEvent("user.two_factor_code", {
           userId: 5,
-          username: 'test@example.com',
-          email: 'test@example.com',
-          code: '123456',
+          username: "test@example.com",
+          email: "test@example.com",
+          code: "123456",
         }),
       );
 
       expect(mailQueueService.enqueueTemplate).toHaveBeenCalledWith(
-        { to: 'test@example.com', subject: 'Your verification code', template: 'code' },
-        { code: '123456' },
+        {
+          to: "test@example.com",
+          subject: "Your verification code",
+          template: "code",
+        },
+        { code: "123456" },
       );
     });
 
-    it('uses provided subject', async () => {
+    it("uses provided subject", async () => {
       await service.handleEvent(
-        makeEvent('user.two_factor_code', {
+        makeEvent("user.two_factor_code", {
           userId: 6,
-          username: 'test@example.com',
-          email: 'test@example.com',
-          code: '654321',
-          subject: 'Login attempt',
+          username: "test@example.com",
+          email: "test@example.com",
+          code: "654321",
+          subject: "Login attempt",
         }),
       );
 
       expect(mailQueueService.enqueueTemplate).toHaveBeenCalledWith(
-        expect.objectContaining({ subject: 'Login attempt' }),
-        { code: '654321' },
+        expect.objectContaining({ subject: "Login attempt" }),
+        { code: "654321" },
       );
     });
   });
 
-  describe('handleEvent — user.confirmed', () => {
-    it('does NOT send any email', async () => {
+  describe("handleEvent — user.confirmed", () => {
+    it("does NOT send any email", async () => {
       await service.handleEvent(
-        makeEvent('user.confirmed', {
+        makeEvent("user.confirmed", {
           userId: 4,
-          username: 'test@example.com',
-          email: 'test@example.com',
+          username: "test@example.com",
+          email: "test@example.com",
         }),
       );
 
@@ -152,11 +160,9 @@ describe('WebhooksService', () => {
     });
   });
 
-  describe('handleEvent — unknown pattern', () => {
-    it('does NOT enqueue anything', async () => {
-      await service.handleEvent(
-        makeEvent('unknown.event', { foo: 'bar' }),
-      );
+  describe("handleEvent — unknown pattern", () => {
+    it("does NOT enqueue anything", async () => {
+      await service.handleEvent(makeEvent("unknown.event", { foo: "bar" }));
 
       expect(mailQueueService.enqueueTemplate).not.toHaveBeenCalled();
     });

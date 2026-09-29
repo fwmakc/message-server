@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { EjsAdapter } from "@nestjs-modules/mailer/dist/adapters/ejs.adapter";
 
 export const getMailConfig = async (
-  configService: ConfigService
+  configService: ConfigService,
 ): Promise<any> => {
   const host = configService.get<string>("SMTP_HOST");
   const port = configService.get<string>("SMTP_PORT");

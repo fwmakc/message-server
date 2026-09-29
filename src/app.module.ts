@@ -19,8 +19,6 @@ import { MetricsModule } from "api-server-toolkit/metrics";
     HealthModule.forRoot("message-server"),
     MetricsModule.forRoot({ service: "message-server" }),
   ],
-  providers: [
-    { provide: APP_FILTER, useClass: SentryGlobalFilter },
-  ],
+  providers: [{ provide: APP_FILTER, useClass: SentryGlobalFilter }],
 })
 export class AppModule {}

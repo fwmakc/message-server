@@ -15,7 +15,11 @@ import { MailWorker } from "./mail.worker";
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([MailJobEntity, MailDataEntity, MailAttachmentEntity]),
+    TypeOrmModule.forFeature([
+      MailJobEntity,
+      MailDataEntity,
+      MailAttachmentEntity,
+    ]),
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -12,7 +12,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ignoreExpiration: false,
       secretOrKeyProvider: passportJwtSecret({
         jwksUri: `${configService.get(
-          "AUTH_SERVER_URL"
+          "AUTH_SERVER_URL",
         )}/.well-known/jwks.json`,
         cache: true,
         rateLimit: true,

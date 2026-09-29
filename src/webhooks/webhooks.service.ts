@@ -16,7 +16,7 @@ export class WebhooksService {
 
   async handleEvent(event: WebhookEnvelopeDto): Promise<void> {
     this.logger.log(
-      `Received event: ${event.pattern} from ${event.source} (eventId=${event.eventId})`
+      `Received event: ${event.pattern} from ${event.source} (eventId=${event.eventId})`,
     );
 
     switch (event.pattern) {
@@ -42,13 +42,13 @@ export class WebhooksService {
 
     if (!confirmUrl) {
       this.logger.log(
-        `User registered (already activated): userId=${userId}, username=${username}`
+        `User registered (already activated): userId=${userId}, username=${username}`,
       );
       return;
     }
 
     this.logger.log(
-      `Queueing registration email for userId=${userId}, email=${email}`
+      `Queueing registration email for userId=${userId}, email=${email}`,
     );
 
     await this.mailQueueService.enqueueTemplate(
@@ -57,7 +57,7 @@ export class WebhooksService {
         subject: subject || "Registration Confirmation",
         template: "register",
       },
-      { url: confirmUrl }
+      { url: confirmUrl },
     );
   }
 
@@ -77,17 +77,17 @@ export class WebhooksService {
         subject: subject || "Password Reset",
         template: "reset",
       },
-      { url: resetUrl }
+      { url: resetUrl },
     );
   }
 
   private async onUserTwoFactorCode(
-    payload: UserTwoFactorCodeDto
+    payload: UserTwoFactorCodeDto,
   ): Promise<void> {
     const { userId, email, code, subject } = payload;
 
     this.logger.log(
-      `Queueing two-factor code email for userId=${userId}, email=${email}`
+      `Queueing two-factor code email for userId=${userId}, email=${email}`,
     );
 
     await this.mailQueueService.enqueueTemplate(
@@ -96,7 +96,7 @@ export class WebhooksService {
         subject: subject || "Your verification code",
         template: "code",
       },
-      { code }
+      { code },
     );
   }
 }

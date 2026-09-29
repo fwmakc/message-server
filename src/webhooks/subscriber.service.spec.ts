@@ -1,19 +1,21 @@
-import { SubscriberService } from './subscriber.service';
-import { ConfigService } from '@nestjs/config';
+import { SubscriberService } from "./subscriber.service";
+import { ConfigService } from "@nestjs/config";
 
-jest.mock('api-server-toolkit/helper', () => ({
+jest.mock("api-server-toolkit/helper", () => ({
   httpPost: jest.fn(),
 }));
 
-import { httpPost } from 'api-server-toolkit/helper';
+import { httpPost } from "api-server-toolkit/helper";
 
-describe('SubscriberService', () => {
+describe("SubscriberService", () => {
   let service: SubscriberService;
   let configService: Partial<Record<string, jest.Mock>>;
 
   function createService(configValues: Record<string, string> = {}) {
     configService = {
-      get: jest.fn((key: string, fallback?: string) => configValues[key] ?? fallback),
+      get: jest.fn(
+        (key: string, fallback?: string) => configValues[key] ?? fallback,
+      ),
     };
     service = new SubscriberService(configService as any);
   }
@@ -21,9 +23,9 @@ describe('SubscriberService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createService({
-      EVENT_SERVER_URL: 'http://event-server:3005',
-      INTERNAL_API_KEY: 'test-key',
-      WEBHOOK_URL: 'http://message-server:3003/webhooks/events',
+      EVENT_SERVER_URL: "http://event-server:3005",
+      INTERNAL_API_KEY: "test-key",
+      WEBHOOK_URL: "http://message-server:3003/webhooks/events",
     });
   });
 
@@ -31,28 +33,33 @@ describe('SubscriberService', () => {
     jest.useRealTimers();
   });
 
-  describe('onApplicationBootstrap — success path', () => {
-    it('calls httpPost with correct URL, body, and headers', async () => {
+  describe("onApplicationBootstrap — success path", () => {
+    it("calls httpPost with correct URL, body, and headers", async () => {
       (httpPost as jest.Mock).mockResolvedValue({ status: 200, ok: true });
 
       await service.onApplicationBootstrap();
 
       expect(httpPost).toHaveBeenCalledWith(
-        'http://event-server:3005/subscribe',
+        "http://event-server:3005/subscribe",
         {
-          service: 'message-server',
-          url: 'http://message-server:3003/webhooks/events',
-          patterns: ['user.registered', 'user.confirmed', 'password.reset', 'user.two_factor_code'],
+          service: "message-server",
+          url: "http://message-server:3003/webhooks/events",
+          patterns: [
+            "user.registered",
+            "user.confirmed",
+            "password.reset",
+            "user.two_factor_code",
+          ],
           active: true,
         },
         {
-          headers: { 'X-Internal-Api-Key': 'test-key' },
+          headers: { "X-Internal-Api-Key": "test-key" },
           timeout: 5000,
         },
       );
     });
 
-    it('subscribes only once on success', async () => {
+    it("subscribes only once on success", async () => {
       (httpPost as jest.Mock).mockResolvedValue({ status: 200 });
 
       await service.onApplicationBootstrap();
@@ -61,10 +68,12 @@ describe('SubscriberService', () => {
     });
   });
 
-  describe('onApplicationBootstrap — retry with backoff', () => {
-    it('retries up to 6 times on failure', async () => {
+  describe("onApplicationBootstrap — retry with backoff", () => {
+    it("retries up to 6 times on failure", async () => {
       jest.useFakeTimers();
-      (httpPost as jest.Mock).mockRejectedValue(new Error('Connection refused'));
+      (httpPost as jest.Mock).mockRejectedValue(
+        new Error("Connection refused"),
+      );
 
       const promise = service.onApplicationBootstrap();
 
@@ -78,9 +87,9 @@ describe('SubscriberService', () => {
       expect(httpPost).toHaveBeenCalledTimes(6);
     });
 
-    it('uses exponential backoff delays (1s, 2s, 4s, 8s, 16s)', async () => {
+    it("uses exponential backoff delays (1s, 2s, 4s, 8s, 16s)", async () => {
       jest.useFakeTimers();
-      (httpPost as jest.Mock).mockRejectedValue(new Error('fail'));
+      (httpPost as jest.Mock).mockRejectedValue(new Error("fail"));
 
       const promise = service.onApplicationBootstrap();
 
@@ -110,9 +119,9 @@ describe('SubscriberService', () => {
       await promise;
     });
 
-    it('does NOT throw after all retries exhausted', async () => {
+    it("does NOT throw after all retries exhausted", async () => {
       jest.useFakeTimers();
-      (httpPost as jest.Mock).mockRejectedValue(new Error('fail'));
+      (httpPost as jest.Mock).mockRejectedValue(new Error("fail"));
 
       const promise = service.onApplicationBootstrap();
       for (let i = 0; i < 5; i++) {
@@ -122,10 +131,10 @@ describe('SubscriberService', () => {
       await expect(promise).resolves.not.toThrow();
     });
 
-    it('stops retrying once successful', async () => {
+    it("stops retrying once successful", async () => {
       jest.useFakeTimers();
       (httpPost as jest.Mock)
-        .mockRejectedValueOnce(new Error('fail'))
+        .mockRejectedValueOnce(new Error("fail"))
         .mockResolvedValueOnce({ status: 200 });
 
       const promise = service.onApplicationBootstrap();
@@ -137,20 +146,20 @@ describe('SubscriberService', () => {
     });
   });
 
-  describe('configuration defaults', () => {
-    it('uses fallback URLs when env vars are missing', async () => {
+  describe("configuration defaults", () => {
+    it("uses fallback URLs when env vars are missing", async () => {
       createService({});
       (httpPost as jest.Mock).mockResolvedValue({ status: 200 });
 
       await service.onApplicationBootstrap();
 
       expect(httpPost).toHaveBeenCalledWith(
-        'http://event-server:3005/subscribe',
+        "http://event-server:3005/subscribe",
         expect.objectContaining({
-          url: 'http://message-server:3003/webhooks/events',
+          url: "http://message-server:3003/webhooks/events",
         }),
         expect.objectContaining({
-          headers: { 'X-Internal-Api-Key': 'changeme' },
+          headers: { "X-Internal-Api-Key": "changeme" },
         }),
       );
     });
