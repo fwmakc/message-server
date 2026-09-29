@@ -17,9 +17,15 @@ export const getMailConfig = async (
   const rootPath = configService.get<string>("ROOT_PATH");
 
   const from = senderName ? `"${senderName}" <${senderEmail}>` : senderEmail;
+  // Credentials only when configured: "smtp://:@host" makes nodemailer
+  // attempt PLAIN auth with empty credentials and fail with
+  // "Missing credentials" — local relays (MailHog) need no auth.
+  const credentials = user
+    ? `${encodeURIComponent(user)}:${encodeURIComponent(password ?? "")}@`
+    : "";
   const transport = `${
     secure ? "smtps" : "smtp"
-  }://${user}:${password}@${host}:${port}`;
+  }://${credentials}${host}:${port}`;
 
   return {
     transport,
