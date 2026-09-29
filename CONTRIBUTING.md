@@ -16,7 +16,6 @@ Thanks for your interest in contributing! This service is part of the
 git clone https://github.com/fwmakc/message-server.git
 cd message-server
 cp .env.example .env
-# Set DB_SYNCHRONIZE=true for dev schema sync
 npm install
 npm run dev
 ```

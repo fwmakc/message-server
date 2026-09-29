@@ -20,12 +20,12 @@ import { MailAttachmentEntity } from "@src/mail/mail-attachment.entity";
         password: config.get<string>("DB_PASSWORD"),
         database: config.get<string>("DB_NAME", "message_server"),
         entities: [MailJobEntity, MailDataEntity, MailAttachmentEntity],
-        synchronize: config.get<string>("DB_SYNCHRONIZE", "false") === "true",
+        // Schema is owned by migrations only (src/typeorm/migrations) — pending
+        // migrations are applied on every boot; never enable synchronize.
         logging: config.get<string>("DB_LOG", "false") === "true",
         migrations: [join(__dirname, "../typeorm/migrations/*{.ts,.js}")],
         migrationsTableName: "migrations_typeorm",
-        migrationsRun:
-          config.get<string>("DB_MIGRATIONS_RUN", "false") === "true",
+        migrationsRun: true,
       }),
     }),
   ],

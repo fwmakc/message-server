@@ -188,7 +188,7 @@ See `.env.example`. Key variables:
 
 ### Database
 - `DB_TYPE`, `DB_HOST`, `DB_PORT`, `DB_NAME` (message_server), `DB_USER`, `DB_PASSWORD`
-- `DB_SYNCHRONIZE` (default: false — set `true` for dev)
+- Schema is owned by TypeORM migrations (see below) — pending migrations are applied on every boot, including the first one on an empty database
 - `DB_LOG`
 
 ### SMTP
@@ -243,7 +243,6 @@ message-server:
 
 ```bash
 cp .env.example .env
-# Set DB_SYNCHRONIZE=true for dev schema sync
 npm install
 npm run dev
 ```
@@ -253,10 +252,12 @@ Swagger UI at `http://localhost:3003/swagger`.
 
 ### TypeORM Migrations
 
+The schema lives exclusively in migrations (`src/typeorm/migrations`); CI proves the chain builds it from scratch and checks entity drift. Zero-downtime rule (expand-contract): additive changes first, remove old columns in a later release. With multiple replicas, move migration out of boot (disable `migrationsRun` in `src/database/database.module.ts`) and run `migration:run` once per deploy before rolling new code.
+
 ```bash
 npm run migration:auto   # Generate migration from entity changes
 npm run migration:create -- --name=Init  # Create empty migration
-npm run migration:run    # Apply migrations
+npm run migration:run    # Apply migrations (usually unnecessary — boot does it)
 npm run migration:revert # Revert last migration
 npm run migration:fake   # Mark as applied without executing
 ```
