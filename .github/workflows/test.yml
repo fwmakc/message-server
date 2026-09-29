@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: fwmakc/event-server
-          ref: v1.0.0
+          ref: v1.1.0
           path: event-server
 
       # dist/ is gitignored in the toolkit — build it for the Docker COPY
