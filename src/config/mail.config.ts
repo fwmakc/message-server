@@ -1,6 +1,6 @@
 import { join } from "path";
 import { ConfigService } from "@nestjs/config";
-import { EjsAdapter } from "@nestjs-modules/mailer/dist/adapters/ejs.adapter";
+import { EjsAdapter } from "@nestjs-modules/mailer/adapters/ejs.adapter";
 
 export const getMailConfig = async (
   configService: ConfigService,

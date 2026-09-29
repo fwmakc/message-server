@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-09-29
+### Fixed
+- Boot failed with ERR_PACKAGE_PATH_NOT_EXPORTED: the EjsAdapter deep import `@nestjs-modules/mailer/dist/adapters/ejs.adapter` is blocked by the package exports map (jest tolerates it, Node does not). Import switched to the exported subpath `@nestjs-modules/mailer/adapters/ejs.adapter`.
+
 ## [0.6.1] - 2026-09-29
 ### Fixed
 - Docker image failed to boot with `Cannot find module '/app/dist/main'`: root-level `jest.config.js` and `scripts/` (allowJs) shifted the tsc common root, so the build landed in `dist/src/`. `tsconfig.build.json` now pins `rootDir: "src"` and `include: ["src/**/*.ts"]`.
