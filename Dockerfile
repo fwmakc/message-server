@@ -11,7 +11,8 @@ COPY event-server/dist/contracts ./node_modules/event-server/dist/contracts
 COPY event-server/package.json ./node_modules/event-server/package.json
 
 COPY message-server/ .
-RUN npx tsc -p tsconfig.build.json
+# Incremental tsbuildinfo from the host would make tsc skip emission
+RUN rm -f *.tsbuildinfo && npx tsc -p tsconfig.build.json
 
 # --- Runner ---
 
