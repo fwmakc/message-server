@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.5] - 2026-09-29
+### Changed
+- Toolkit pinned to v0.20.3 (QueueWorker claim: Postgres forbids FOR UPDATE on the nullable side of an outer join — relations are now hydrated by a second lock-free query inside the claim transaction).
+
 ## [0.6.4] - 2026-09-29
 ### Fixed
 - SMTP transport string contained empty credentials (`smtp://:@host`) when `SMTP_USER` was unset — nodemailer then attempted PLAIN auth with empty credentials and every send failed with «Missing credentials for "PLAIN"». Credentials are now embedded only when `SMTP_USER` is set, and URL-encoded (`encodeURIComponent`), so passwords with `@` or `:` no longer break the URL.
