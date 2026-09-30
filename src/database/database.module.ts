@@ -2,6 +2,8 @@ import { join } from "path";
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { DataSource, DataSourceOptions } from "typeorm";
+import { runMigrationsUnderLock } from "api-server-toolkit/db";
 import { MailJobEntity } from "@src/mail/mail-job.entity";
 import { MailDataEntity } from "@src/mail/mail-data.entity";
 import { MailAttachmentEntity } from "@src/mail/mail-attachment.entity";
@@ -27,6 +29,16 @@ import { MailAttachmentEntity } from "@src/mail/mail-attachment.entity";
         migrationsTableName: "migrations_typeorm",
         migrationsRun: true,
       }),
+      // Serialize boot migrations across replicas (TypeORM has no built-in
+      // migration locking); the helper consumes `migrationsRun`.
+      async dataSourceFactory(option) {
+        if (!option) throw new Error("Invalid options passed");
+        const { migrationsRun, ...dsOption } = option;
+        if (migrationsRun) {
+          await runMigrationsUnderLock(dsOption as DataSourceOptions);
+        }
+        return new DataSource(dsOption as DataSourceOptions);
+      },
     }),
   ],
 })

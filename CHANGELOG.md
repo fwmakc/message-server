@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.8] - 2026-09-30
+### Changed (dependency)
+- `api-server-toolkit` v0.23.0: boot migrations now run through
+  `runMigrationsUnderLock()` (pg advisory xact lock) in `dataSourceFactory` —
+  simultaneously booting replicas serialize instead of racing `InitialSchema`
+  on a cold database (TypeORM 0.3.x has no built-in migration locking).
+
 ## [0.6.7] - 2026-09-30
 ### Changed
 - Toolkit pinned `#v0.22.0` (self-pentest wave 4): Access-бины fail-closed, delete-гварды для tenant-биндов, scoped `movePosition`, search relation clamp, `getClientIp()`/`TRUST_PROXY`.
