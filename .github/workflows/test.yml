@@ -115,18 +115,27 @@ jobs:
         with:
           path: message-server
 
+      # Sibling checkouts must match the package.json pins — otherwise the
+      # Docker build compiles against a stale toolkit/contracts and drifts
+      # every time a dependency is bumped. ($GITHUB_ENV is visible only to
+      # subsequent steps, so this runs before the sibling checkouts.)
+      - name: Resolve sibling pins from package.json
+        run: |
+          echo "TOOLKIT_REF=$(node -p "require('./message-server/package.json').dependencies['api-server-toolkit'].split('#')[1]")" >> $GITHUB_ENV
+          echo "EVENTSERVER_REF=$(node -p "require('./message-server/package.json').dependencies['event-server'].split('#')[1]")" >> $GITHUB_ENV
+
       # Dockerfile copies the toolkit from a sibling directory
       - uses: actions/checkout@v4
         with:
           repository: fwmakc/api-server-toolkit
-          ref: v0.20.0
+          ref: ${{ env.TOOLKIT_REF }}
           path: api-server-toolkit
 
       # Dockerfile copies prebuilt event contracts (dist/contracts is committed in the event-server repo)
       - uses: actions/checkout@v4
         with:
           repository: fwmakc/event-server
-          ref: v1.1.0
+          ref: ${{ env.EVENTSERVER_REF }}
           path: event-server
 
       # dist/ is gitignored in the toolkit — build it for the Docker COPY
