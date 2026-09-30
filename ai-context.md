@@ -1,7 +1,7 @@
 # AI Context — message-server
 
 > Auto-generated. Run `npm run ai-context` to regenerate.
-> Generated: 2026-09-28T16:52:19.231Z
+> Generated: 2026-09-30T15:54:49.490Z
 
 ---
 
@@ -40,6 +40,7 @@ Base path: `/webhooks`
 - `log(`User registered (already activated): userId=$`
 - `onUserConfirmed(payload: UserConfirmedDto): Promise<void>`
 - `onPasswordReset(payload: PasswordResetDto): Promise<void>`
+- `onUserTwoFactorCode(payload: UserTwoFactorCodeDto,): Promise<void>`
 
 ---
 
