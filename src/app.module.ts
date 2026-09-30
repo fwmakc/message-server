@@ -8,6 +8,7 @@ import { MailModule } from "@src/mail/mail.module";
 import { WebhooksModule } from "@src/webhooks/webhooks.module";
 import { HealthModule } from "api-server-toolkit/health";
 import { MetricsModule } from "api-server-toolkit/metrics";
+import { AuditModule } from "api-server-toolkit";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MetricsModule } from "api-server-toolkit/metrics";
     WebhooksModule,
     HealthModule.forRoot("message-server"),
     MetricsModule.forRoot({ service: "message-server" }),
+    AuditModule.forRoot(),
   ],
   providers: [{ provide: APP_FILTER, useClass: SentryGlobalFilter }],
 })
