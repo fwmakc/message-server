@@ -65,7 +65,12 @@ export class MailController {
   }
 
   @Post("send")
-  @UseInterceptors(FilesInterceptor("file"))
+  @UseGuards(InternalAuthGuard)
+  @UseInterceptors(
+    FilesInterceptor("file", 10, {
+      limits: { fileSize: (Number(process.env.MAIL_MAX_ATTACHMENT_MB) || 10) * 1024 * 1024 },
+    }),
+  )
   async send(
     @Body("options") options: MailDto,
     @UploadedFiles() files: Express.Multer.File[],
@@ -76,7 +81,12 @@ export class MailController {
   }
 
   @Post("send_by_template")
-  @UseInterceptors(FilesInterceptor("file"))
+  @UseGuards(InternalAuthGuard)
+  @UseInterceptors(
+    FilesInterceptor("file", 10, {
+      limits: { fileSize: (Number(process.env.MAIL_MAX_ATTACHMENT_MB) || 10) * 1024 * 1024 },
+    }),
+  )
   async sendByTemplate(
     @Body("options") options: MailDto,
     @Body("data") data: object,

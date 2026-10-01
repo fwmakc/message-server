@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-10-01
+
+### Security (Wave 6 audit)
+
+- **InternalAuthGuard added to `POST /mail/send` and `POST /mail/send_by_template`** — the only bus/mail routes without a guard (their siblings had one); together with the edge `/mail` proxy this was an unauthenticated mail relay. The gateway edge no longer proxies `/mail` at all (gateway-server 0.6.1).
+- **`template` is now a bare name** (`^[A-Za-z0-9_-]+$`, max 128): the EJS adapter resolves absolute paths and `..` segments relative to views/mail, so a client-controlled template string was an arbitrary-file-read primitive (rendered file mailed to an attacker-supplied `to`).
+- `subject`/`text`/`html` MaxLength caps; `from` is `@IsOptional` + `@IsEmail` (absent `from` used to fail validation).
+- Attachments capped via `MAIL_MAX_ATTACHMENT_MB` (default 10 MB per file, max 10 files).
+
 ## [0.6.9] - 2026-10-01
 ### Added
 - **Webhook delivery hardening (paired with event-server 0.8.4)**:
