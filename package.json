@@ -60,8 +60,8 @@
     "helmet": "^8.3.0",
     "jwks-rsa": "^4.1.0",
     "morgan": "^1.10.1",
-    "multer": "^1.4.4-lts.1",
-    "nodemailer": "^6.9.0",
+    "multer": "^2.4.0",
+    "nodemailer": "^10.0.13",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.22.0",
@@ -89,5 +89,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.0"
+  },
+  "overrides": {
+    "nodemailer": "$nodemailer"
   }
 }
