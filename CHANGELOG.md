@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.9] - 2026-10-01
+### Added
+- **Webhook delivery hardening (paired with event-server 0.8.4)**:
+  - `POST /webhooks/events` is now guarded by `EventDeliveryGuard`:
+    with `WEBHOOK_SECRET` set it verifies the HMAC
+    (`X-Event-Signature: sha256=...` + `X-Event-Timestamp`, 300s replay
+    window) over the raw request body (`rawBody: true` in the bootstrap);
+    unset = legacy `X-Internal-Api-Key` check (fail-closed).
+  - **Idempotency by `eventId`**: new `webhook_processed_events` ledger
+    (unique index); the dedupe marker and the mail job are written in ONE
+    transaction (`ON CONFLICT DO NOTHING` decides), so a redelivered event
+    cannot send a second email and a crash can neither lose nor duplicate
+    the mail. Unknown patterns still touch neither.
+  - `SubscriberService` passes `WEBHOOK_SECRET` at `POST /subscribe`
+    (registration is idempotent — a changed secret re-provisions the
+    stored one); unset logs a prominent warning instead of failing.
+- Migration `AddProcessedEvents`.
+
+### Changed
+- Pins: toolkit `#v0.24.0`, event-server `#v0.8.4`.
+
 ## [0.6.8] - 2026-09-30
 ### Changed (dependency)
 - `api-server-toolkit` v0.23.0: boot migrations now run through

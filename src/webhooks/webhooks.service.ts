@@ -1,5 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { MailQueueService } from "@src/mail/mail.queue.service";
+import { InjectDataSource } from "@nestjs/typeorm";
+import { DataSource, EntityManager } from "typeorm";
+import { MailJobEntity } from "@src/mail/mail-job.entity";
+import { ProcessedEventEntity } from "./processed-event.entity";
 import {
   WebhookEnvelopeDto,
   UserRegisteredDto,
@@ -12,7 +15,9 @@ import {
 export class WebhooksService {
   private readonly logger = new Logger(WebhooksService.name);
 
-  constructor(private readonly mailQueueService: MailQueueService) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+  ) {}
 
   async handleEvent(event: WebhookEnvelopeDto): Promise<void> {
     this.logger.log(
@@ -21,23 +26,84 @@ export class WebhooksService {
 
     switch (event.pattern) {
       case "user.registered":
-        await this.onUserRegistered(event.payload as UserRegisteredDto);
+        await this.processOnce(event, (em, payload) =>
+          this.onUserRegistered(em, payload as UserRegisteredDto),
+        );
         break;
       case "user.confirmed":
-        await this.onUserConfirmed(event.payload as UserConfirmedDto);
+        await this.processOnce(event, (em, payload) =>
+          this.onUserConfirmed(payload as UserConfirmedDto),
+        );
         break;
       case "password.reset":
-        await this.onPasswordReset(event.payload as PasswordResetDto);
+        await this.processOnce(event, (em, payload) =>
+          this.onPasswordReset(em, payload as PasswordResetDto),
+        );
         break;
       case "user.two_factor_code":
-        await this.onUserTwoFactorCode(event.payload as UserTwoFactorCodeDto);
+        await this.processOnce(event, (em, payload) =>
+          this.onUserTwoFactorCode(em, payload as UserTwoFactorCodeDto),
+        );
         break;
       default:
         this.logger.warn(`No handler for pattern: ${event.pattern}`);
     }
   }
 
-  private async onUserRegistered(payload: UserRegisteredDto): Promise<void> {
+  /**
+   * Marks the event processed and enqueues the side effect (mail job) in
+   * ONE transaction: `ON CONFLICT DO NOTHING` on the unique eventId makes
+   * a redelivered event a no-op, and the shared transaction means a crash
+   * can neither lose the mail nor send it twice.
+   */
+  private async processOnce(
+    event: WebhookEnvelopeDto,
+    handler: (em: EntityManager, payload: unknown) => Promise<void>,
+  ): Promise<void> {
+    const processed = await this.dataSource.transaction(async (em) => {
+      const inserted = await em
+        .createQueryBuilder()
+        .insert()
+        .into(ProcessedEventEntity)
+        .values({ eventId: String(event.eventId) })
+        .orIgnore()
+        .returning("id")
+        .execute();
+
+      if (inserted.raw.length === 0) return false;
+
+      await handler(em, event.payload);
+      return true;
+    });
+
+    if (!processed) {
+      this.logger.log(
+        `Duplicate delivery skipped (eventId=${event.eventId}, pattern=${event.pattern})`,
+      );
+    }
+  }
+
+  private async enqueueTemplate(
+    em: EntityManager,
+    options: { to: string; subject: string; template: string },
+    payload: object,
+  ): Promise<void> {
+    await em.save(
+      em.create(MailJobEntity, {
+        data: {
+          to: options.to,
+          subject: options.subject,
+          template: options.template,
+          payload,
+        },
+      } as any),
+    );
+  }
+
+  private async onUserRegistered(
+    em: EntityManager,
+    payload: UserRegisteredDto,
+  ): Promise<void> {
     const { userId, username, email, subject, confirmUrl } = payload;
 
     if (!confirmUrl) {
@@ -51,7 +117,8 @@ export class WebhooksService {
       `Queueing registration email for userId=${userId}, email=${email}`,
     );
 
-    await this.mailQueueService.enqueueTemplate(
+    await this.enqueueTemplate(
+      em,
       {
         to: email,
         subject: subject || "Registration Confirmation",
@@ -66,12 +133,16 @@ export class WebhooksService {
     this.logger.log(`User confirmed: userId=${userId}, username=${username}`);
   }
 
-  private async onPasswordReset(payload: PasswordResetDto): Promise<void> {
+  private async onPasswordReset(
+    em: EntityManager,
+    payload: PasswordResetDto,
+  ): Promise<void> {
     const { username, email, subject, resetUrl } = payload;
 
     this.logger.log(`Queueing password reset email for email=${email}`);
 
-    await this.mailQueueService.enqueueTemplate(
+    await this.enqueueTemplate(
+      em,
       {
         to: email,
         subject: subject || "Password Reset",
@@ -82,6 +153,7 @@ export class WebhooksService {
   }
 
   private async onUserTwoFactorCode(
+    em: EntityManager,
     payload: UserTwoFactorCodeDto,
   ): Promise<void> {
     const { userId, email, code, subject } = payload;
@@ -90,7 +162,8 @@ export class WebhooksService {
       `Queueing two-factor code email for userId=${userId}, email=${email}`,
     );
 
-    await this.mailQueueService.enqueueTemplate(
+    await this.enqueueTemplate(
+      em,
       {
         to: email,
         subject: subject || "Your verification code",

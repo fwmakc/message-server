@@ -7,6 +7,7 @@ import { runMigrationsUnderLock } from "api-server-toolkit/db";
 import { MailJobEntity } from "@src/mail/mail-job.entity";
 import { MailDataEntity } from "@src/mail/mail-data.entity";
 import { MailAttachmentEntity } from "@src/mail/mail-attachment.entity";
+import { ProcessedEventEntity } from "@src/webhooks/processed-event.entity";
 
 @Module({
   imports: [
@@ -21,7 +22,12 @@ import { MailAttachmentEntity } from "@src/mail/mail-attachment.entity";
         username: config.get<string>("DB_USER", "root"),
         password: config.get<string>("DB_PASSWORD"),
         database: config.get<string>("DB_NAME", "message_server"),
-        entities: [MailJobEntity, MailDataEntity, MailAttachmentEntity],
+        entities: [
+          MailJobEntity,
+          MailDataEntity,
+          MailAttachmentEntity,
+          ProcessedEventEntity,
+        ],
         // Schema is owned by migrations only (src/typeorm/migrations) — pending
         // migrations are applied on every boot; never enable synchronize.
         logging: config.get<string>("DB_LOG", "false") === "true",

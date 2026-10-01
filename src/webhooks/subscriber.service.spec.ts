@@ -164,4 +164,30 @@ describe("SubscriberService", () => {
       );
     });
   });
+
+  describe("WEBHOOK_SECRET", () => {
+    it("passes the secret at registration when configured", async () => {
+      createService({
+        EVENT_SERVER_URL: "http://event-server:3005",
+        INTERNAL_API_KEY: "test-key",
+        WEBHOOK_URL: "http://message-server:3003/webhooks/events",
+        WEBHOOK_SECRET: "s".repeat(64),
+      });
+      (httpPost as jest.Mock).mockResolvedValue({ status: 200 });
+
+      await service.onApplicationBootstrap();
+
+      const body = (httpPost as jest.Mock).mock.calls[0][1];
+      expect(body.secret).toBe("s".repeat(64));
+    });
+
+    it("omits the secret key entirely when WEBHOOK_SECRET is unset", async () => {
+      (httpPost as jest.Mock).mockResolvedValue({ status: 200 });
+
+      await service.onApplicationBootstrap();
+
+      const body = (httpPost as jest.Mock).mock.calls[0][1];
+      expect("secret" in body).toBe(false);
+    });
+  });
 });

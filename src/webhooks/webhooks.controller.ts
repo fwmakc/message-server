@@ -7,12 +7,12 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
-import { InternalAuthGuard } from "api-server-toolkit/guard";
+import { EventDeliveryGuard } from "api-server-toolkit/guard";
 import { WebhookEnvelopeDto } from "event-server/contracts";
 import { WebhooksService } from "./webhooks.service";
 
 @Controller("webhooks")
-@UseGuards(InternalAuthGuard)
+@UseGuards(EventDeliveryGuard)
 export class WebhooksController {
   constructor(private readonly webhooksService: WebhooksService) {}
 

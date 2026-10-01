@@ -8,6 +8,7 @@ export class SubscriberService implements OnApplicationBootstrap {
   private readonly eventServerUrl: string;
   private readonly apiKey: string;
   private readonly webhookUrl: string;
+  private readonly webhookSecret?: string;
   private readonly patterns = [
     "user.registered",
     "user.confirmed",
@@ -25,6 +26,12 @@ export class SubscriberService implements OnApplicationBootstrap {
       "WEBHOOK_URL",
       "http://message-server:3003/webhooks/events",
     );
+    // Shared HMAC secret for signed deliveries. Passed at registration so
+    // event-server stores it for this subscriber; EventDeliveryGuard
+    // verifies X-Event-Signature with it. Unset = legacy internal-key
+    // transport (set WEBHOOK_SECRET on BOTH services to harden).
+    this.webhookSecret =
+      this.config.get<string>("WEBHOOK_SECRET") || undefined;
   }
 
   async onApplicationBootstrap(): Promise<void> {
@@ -40,6 +47,9 @@ export class SubscriberService implements OnApplicationBootstrap {
           url: this.webhookUrl,
           patterns: this.patterns,
           active: true,
+          // Registration is idempotent (same service+url merges): a fresh
+          // secret here re-provisions the stored one, e.g. after rotation.
+          ...(this.webhookSecret ? { secret: this.webhookSecret } : {}),
         },
         {
           headers: { "X-Internal-Api-Key": this.apiKey },
@@ -47,9 +57,15 @@ export class SubscriberService implements OnApplicationBootstrap {
         },
       );
 
-      this.logger.log(
-        `Subscribed to event-server (patterns: ${this.patterns.join(", ")})`,
-      );
+      if (this.webhookSecret) {
+        this.logger.log(
+          `Subscribed to event-server (patterns: ${this.patterns.join(", ")}, signed delivery)`,
+        );
+      } else {
+        this.logger.warn(
+          `Subscribed to event-server WITHOUT a delivery secret — webhook accepts the shared internal key. Set WEBHOOK_SECRET (same value on event-server) to enable HMAC-signed delivery.`,
+        );
+      }
     } catch (err) {
       if (retry < 5) {
         const delay = Math.pow(2, retry) * 1000;
