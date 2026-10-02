@@ -35,7 +35,8 @@
     "migration:fake": "npm run migration:run -- --fake",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "test:wiring": "ts-node -r tsconfig-paths/register scripts/wiring.ts"
   },
   "engines": {
     "node": ">=20"
