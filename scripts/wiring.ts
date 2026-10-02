@@ -13,7 +13,7 @@ process.env.DB_TYPE = "postgres";
 process.env.DB_HOST = "127.0.0.1";
 process.env.DB_PORT = "5432";
 process.env.DB_USER = "root";
-process.env.DB_PASSWORD = "1234";
+process.env.DB_PASSWORD = process.env.DB_PASSWORD || "1234";
 process.env.DB_NAME = "message_server_wiring_test";
 process.env.INTERNAL_API_KEY = "wiring-internal-key";
 // Instant connection-refused: the boot-time self-subscription to event-server
@@ -50,7 +50,7 @@ async function recreateDatabase(): Promise<void> {
     host: "127.0.0.1",
     port: 5432,
     user: "root",
-    password: "1234",
+    password: process.env.DB_PASSWORD || "1234",
     database: "postgres",
   });
   await client.connect();

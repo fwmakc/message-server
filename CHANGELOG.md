@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Tests
 
+- `scripts/wiring.ts`: кредиты БД переопределяются через env (`DB_PASSWORD`), дефолт не изменился.
+
 - **Wiring-проверка реального бута** (`scripts/wiring.ts`, `npm run test:wiring`): поднимает настоящий `AppModule` на чистой БД `message_server_wiring_test` (drop/create + реальные boot-миграции — ловит дрейф entity↔migrations), затем живые пробы: `enqueueEmail` пишет и job-строку, и data-строку (связка проверяется raw-SQL join), processed-events round-trip. 4/4 проверок, exit code для CI. SMTP и event-server в пробах указаны на недоступные адреса — внешняя доставка не дёргается. Запуск через ts-node (не jest).
 - CI: новый job `wiring` с TZ-матрицей (UTC + Europe/Moscow).
 
