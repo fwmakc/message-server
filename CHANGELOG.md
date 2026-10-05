@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- **Empty SMTP envelope on letters without an explicit `from`**: the worker/adapter passed `from: undefined` into `MailerService.sendMail`, and nodemailer's key-by-key merge over transport defaults erased `defaults.from` (built from `SMTP_SENDER_NAME`/`SMTP_SENDER_EMAIL`) — the conversation opened with `MAIL FROM:<>` and relays answered `550 Invalid syntax in MAIL command`. The adapter now omits the key entirely so the default sender applies (regression spec in `mailer.adapter.spec.ts`; journal №3's second stacked defect).
+
 ### Tests
 
 - `scripts/wiring.ts`: кредиты БД переопределяются через env (`DB_PASSWORD`), дефолт не изменился.

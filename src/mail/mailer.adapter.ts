@@ -26,10 +26,14 @@ export class SmtpMailerAdapter extends MailerAdapter {
   }
 
   async send(mail: OutboundMail): Promise<MailerSendResult> {
+    // `from` must be omitted, not `from: undefined`: nodemailer merges send
+    // options over transport defaults key-by-key, so a present-but-undefined
+    // key erases defaults.from and the SMTP conversation degrades to
+    // MAIL FROM:<> — rejected by relays with "550 Invalid syntax".
     const result = await this.mailerService.sendMail({
       to: mail.to,
-      from: mail.from,
       subject: mail.subject,
+      ...(mail.from ? { from: mail.from } : {}),
       text: mail.text,
       html: mail.html,
       template: mail.template,

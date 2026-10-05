@@ -215,7 +215,7 @@ smtp(s)://USER:PASSWORD@HOST:PORT
 ```
 
 - `SMTP_SECURE=true` → `smtps://` (TLS), otherwise `smtp://`
-- Default `from`: `"${SMTP_SENDER_NAME}" <${SMTP_SENDER_EMAIL}>`
+- Default `from`: `"${SMTP_SENDER_NAME}" <${SMTP_SENDER_EMAIL}>`. Applied only when the job omits `from` entirely — the adapter never forwards `from: undefined` (that key erases the default and the SMTP envelope degrades to `MAIL FROM:<>` → `550 Invalid syntax`).
 
 ---
 
