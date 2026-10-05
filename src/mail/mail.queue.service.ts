@@ -4,12 +4,14 @@ import { Repository } from "typeorm";
 import { QueueService } from "api-server-toolkit";
 import { MailJobEntity } from "./mail-job.entity";
 import { MailAttachmentEntity } from "./mail-attachment.entity";
+import { MailSuppressionService } from "./mail-suppression.service";
 import { MailDto } from "./mail.dto";
 
 @Injectable()
 export class MailQueueService extends QueueService<MailJobEntity> {
   constructor(
     @InjectRepository(MailJobEntity) repo: Repository<MailJobEntity>,
+    private readonly suppression: MailSuppressionService,
   ) {
     super(repo);
   }
@@ -18,6 +20,14 @@ export class MailQueueService extends QueueService<MailJobEntity> {
     options: MailDto,
     attachments?: MailAttachmentEntity[],
   ): Promise<MailJobEntity> {
+    // Same rule as the MailDto class validator — programmatic callers skip
+    // the HTTP validation pipe, so the guard lives here too (journal №3).
+    if (!options.text?.trim() && !options.html?.trim()) {
+      throw new BadRequestException(
+        "enqueueEmail requires non-empty text or html",
+      );
+    }
+    await this.rejectSuppressed(options.to);
     return this.enqueue({
       data: {
         to: options.to,
@@ -88,6 +98,10 @@ export class MailQueueService extends QueueService<MailJobEntity> {
     payload: object,
     attachments?: MailAttachmentEntity[],
   ): Promise<MailJobEntity> {
+    if (!options.template?.trim()) {
+      throw new BadRequestException("enqueueTemplate requires a template name");
+    }
+    await this.rejectSuppressed(options.to);
     return this.enqueue({
       data: {
         to: options.to,
@@ -98,5 +112,19 @@ export class MailQueueService extends QueueService<MailJobEntity> {
         attachments,
       },
     } as any);
+  }
+
+  /**
+   * Hard bounces and complaints poison sender reputation (design note 7.6
+   * §5) — a suppressed recipient is rejected at enqueue, before the letter
+   * can burn an attempt or a provider complaint threshold.
+   */
+  private async rejectSuppressed(to: string): Promise<void> {
+    const hit = await this.suppression.find(to);
+    if (hit) {
+      throw new BadRequestException(
+        `recipient ${to} is on the suppression list (${hit.reason}); remove the mail_suppressions row to override`,
+      );
+    }
   }
 }

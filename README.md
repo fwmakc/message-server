@@ -83,6 +83,7 @@ auth-server ──[event]──> event-server ──[webhook]──> message-ser
 | GET | `/mail/status/:id` | `InternalAuthGuard` | Check queue job status (id, status, attempts, errorMessage) |
 | GET | `/mail/failed?page=&limit=` | `InternalAuthGuard` | Paginated list of failed jobs (recipient, subject, attempts, error) |
 | POST | `/mail/failed/:id/requeue` | `InternalAuthGuard` | Requeue a failed job (fresh attempt budget; 400 if not failed) |
+| POST | `/mail/webhooks/:provider` | `InternalAuthGuard` | Provider feedback (bounce/complaint) → suppression list + `mail.bounced`/`mail.complained` on the bus |
 
 > `/mail/send*` endpoints are `@ApiExcludeController` (hidden from Swagger). Security relies on network isolation — message-server is not exposed in nginx.
 
@@ -102,11 +103,12 @@ Built on the toolkit's generic TypeORM queue infrastructure (`QueueJobEntity`, `
 
 ### Flow
 
-1. **Enqueue** — `MailQueueService` persists a `mail_jobs` row (status: `pending`) with nested `mail_data` + `mail_attachments`
-2. **Poll** — `MailWorker` runs every `WORKER_INTERVAL_MS`, picks pending jobs (batch size: `BATCH_SIZE`)
-3. **Send** — Renders EJS template (if set), sends via nodemailer/SMTP
-4. **Retry** — On failure: exponential backoff (`MAIL_RETRY_DELAY * 2^attempt`), up to `MAIL_MAX_ATTEMPTS`
-5. **Cleanup** — Old `done`/`failed` jobs deleted after `MAIL_CLEANUP_MAX_AGE_DAYS`
+1. **Enqueue** — `MailQueueService` persists a `mail_jobs` row (status: `pending`) with nested `mail_data` + `mail_attachments`. Enqueue-time validation (journal №3): a letter must set at least one of `template`/`text`/`html` (HTTP 400 otherwise) — undeliverable-by-construction mail no longer burns the retry budget; recipients on the suppression list are rejected the same way
+2. **Poll** — `MailWorker` runs every `WORKER_INTERVAL_MS`, picks pending jobs (batch size: `BATCH_SIZE`), and sends up to `MAIL_CONCURRENCY` of them in parallel (toolkit `QueueWorkerConfig.concurrency`, journal №7 — the pipeline used to be sequential end to end at ~3-5 mails/s)
+3. **Throttle** — before each send the worker takes a token from the per-recipient-domain bucket (`DomainThrottleService`); when a domain's budget stays empty the job is rescheduled, not blocked
+4. **Send** — Renders EJS template (if set), sends via the `MailerAdapter` boundary (`SmtpMailerAdapter` = nodemailer/SMTP; provider adapters drop in without touching the queue)
+5. **Retry** — On failure: exponential backoff (`MAIL_RETRY_DELAY * 2^attempt`), up to `MAIL_MAX_ATTEMPTS`. A permanent SMTP reply (55x / 5.x.y) additionally suppresses the recipient and publishes `mail.bounced` (`type: hard`)
+6. **Cleanup** — Old `done`/`failed` jobs deleted after `MAIL_CLEANUP_MAX_AGE_DAYS`
 
 ### Queue worker configuration
 
@@ -114,10 +116,49 @@ Built on the toolkit's generic TypeORM queue infrastructure (`QueueJobEntity`, `
 |----------|---------|-------------|
 | `WORKER_INTERVAL_MS` | 5000 | Polling cycle (ms) |
 | `BATCH_SIZE` | 50 | Max jobs per cycle |
+| `MAIL_CONCURRENCY` | 4 | Parallel sends within a claimed batch |
 | `MAIL_MAX_ATTEMPTS` | 5 | Max retry attempts |
 | `MAIL_RETRY_DELAY` | 5 | Base retry delay (seconds) |
 | `MAIL_CLEANUP_INTERVAL` | 3600000 | Cleanup cycle (ms) |
 | `MAIL_CLEANUP_MAX_AGE_DAYS` | 30 | Delete jobs older than this |
+
+### Outbound per-domain caps
+
+Token bucket per recipient domain (design note 7.6 §4): protects sender
+reputation when a burst is skewed toward one big provider.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MAIL_DOMAIN_RATE_PER_MIN` | unset (off) | Default cap per recipient domain (letters/min) |
+| `MAIL_DOMAIN_RATE_OVERRIDES` | unset | JSON, e.g. `{"gmail.com":500,"gov.ru":30}` — big consumer domains higher, corporate/greylisting domains lower |
+| `MAIL_DOMAIN_THROTTLE_MAX_WAIT_MS` | 45000 | Wait budget for a token before the job is rescheduled (kept below the queue stale-reclaim window) |
+
+Production starting point: default 100/min, gmail/outlook/yahoo raised,
+corporate/ministerial domains lowered. Honest limitation: buckets are
+in-process, so N worker replicas give an aggregate N×cap — exact for
+single-replica deployments; fleet-wide pacing is a Redis upgrade.
+
+### Suppression list & provider feedback
+
+`mail_suppressions` (unique email, reason `bounce`\|`complaint`) holds
+addresses that must not be mailed again — hard bounces (mailbox does not
+exist) and complaints (spam reports). Every enqueue checks the list and
+rejects with 400; sending to either class poisons sender reputation fastest.
+
+Provider feedback enters via `POST /mail/webhooks/:provider`
+(`InternalAuthGuard`; a thin per-provider adapter translates SES/Postmark
+payloads into the normalized body):
+
+```json
+{ "event": "bounce" | "complaint", "email": "a@b.c", "type": "hard" | "soft", "reason": "...", "messageId": "..." }
+```
+
+- `bounce` + `hard` → suppressed + `mail.bounced` published on the bus
+- `bounce` + `soft` → `mail.bounced` only (rides the normal retry path, never suppressed)
+- `complaint` → suppressed + `mail.complained` published (contracts `event-server/contracts` v1.4.0)
+
+The bus republication lets other services react (e.g. auth-server deactivating
+a dead account); the suppression list itself is the enforcement point.
 
 ---
 

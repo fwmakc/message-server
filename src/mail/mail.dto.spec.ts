@@ -40,3 +40,40 @@ describe("MailDto template validation", () => {
     expect(e.map((x) => x.property)).toContain("to");
   });
 });
+
+// Journal №3: a letter without template/text/html is undeliverable by
+// construction — it must be rejected at enqueue, not burn 5 worker attempts.
+describe("MailDto renderable content", () => {
+  const base = { to: "user@example.com" };
+
+  async function errs(extra: Record<string, unknown>) {
+    const dto = plainToInstance(MailDto, { ...base, ...extra });
+    return validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+  }
+
+  it.each([
+    ["nothing set", {}],
+    ["all empty strings", { text: "", html: "", template: "" }],
+    ["whitespace only", { text: "   \n  " }],
+  ])("rejects mail with %s", async (_label, extra) => {
+    const e = await errs(extra);
+    expect(
+      e.some(
+        (x) =>
+          x.constraints &&
+          Object.values(x.constraints).some((m) =>
+            m.includes("undeliverable by construction"),
+          ),
+      ),
+    ).toBe(true);
+  });
+
+  it.each([
+    ["template", { template: "register" }],
+    ["text", { text: "hello" }],
+    ["html", { html: "<p>hello</p>" }],
+  ])("accepts mail with %s alone", async (_label, extra) => {
+    const e = await errs(extra);
+    expect(e).toHaveLength(0);
+  });
+});

@@ -5,6 +5,7 @@ import { Repository } from "typeorm";
 describe("MailQueueService", () => {
   let service: MailQueueService;
   let repo: jest.Mocked<Pick<Repository<any>, "create" | "save" | "findOne">>;
+  let suppression: { find: jest.Mock };
 
   beforeEach(() => {
     repo = {
@@ -12,7 +13,40 @@ describe("MailQueueService", () => {
       save: jest.fn().mockResolvedValue({ id: 1, status: "pending" }),
       findOne: jest.fn(),
     } as any;
-    service = new MailQueueService(repo as any);
+    suppression = { find: jest.fn().mockResolvedValue(null) };
+    service = new MailQueueService(repo as any, suppression as any);
+  });
+
+  describe("suppression filter", () => {
+    it("rejects enqueue to a suppressed recipient", async () => {
+      suppression.find = jest
+        .fn()
+        .mockResolvedValue({ email: "dead@example.com", reason: "bounce" });
+
+      await expect(
+        service.enqueueEmail({ to: "dead@example.com", text: "t" } as any),
+      ).rejects.toThrow(/suppression list \(bounce\)/);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it("rejects template enqueue to a suppressed recipient too", async () => {
+      suppression.find = jest
+        .fn()
+        .mockResolvedValue({ email: "angry@example.com", reason: "complaint" });
+
+      await expect(
+        service.enqueueTemplate(
+          { to: "angry@example.com", template: "register" } as any,
+          {},
+        ),
+      ).rejects.toThrow(/suppression list \(complaint\)/);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it("passes unsuppressed recipients through", async () => {
+      await service.enqueueEmail({ to: "ok@example.com", text: "t" } as any);
+      expect(repo.save).toHaveBeenCalled();
+    });
   });
 
   describe("enqueueEmail", () => {
@@ -42,7 +76,7 @@ describe("MailQueueService", () => {
         { filename: "file.pdf", content: "base64", encoding: "base64" },
       ];
       await service.enqueueEmail(
-        { to: "user@example.com", subject: "Report" } as any,
+        { to: "user@example.com", subject: "Report", text: "body" } as any,
         attachments as any,
       );
 
@@ -55,9 +89,29 @@ describe("MailQueueService", () => {
       const result = await service.enqueueEmail({
         to: "user@example.com",
         subject: "Test",
+        text: "body",
       } as any);
 
       expect(result).toEqual({ id: 1, status: "pending" });
+    });
+
+    // Journal №3: undeliverable-by-construction letters are rejected at
+    // enqueue instead of burning the worker attempt budget.
+    it.each([
+      ["no content at all", { to: "user@example.com", subject: "x" }],
+      ["empty text and html", { to: "u@e.com", text: "", html: "" }],
+    ])("rejects mail with %s", async (_label, options) => {
+      await expect(service.enqueueEmail(options as any)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it("rejects a template enqueue without a template name", async () => {
+      await expect(
+        service.enqueueTemplate({ to: "u@e.com", subject: "x" } as any, {}),
+      ).rejects.toThrow(BadRequestException);
+      expect(repo.save).not.toHaveBeenCalled();
     });
   });
 
