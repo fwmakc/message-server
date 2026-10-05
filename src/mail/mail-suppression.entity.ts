@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
 } from "typeorm";
 
@@ -13,6 +14,7 @@ import {
  * suspension. Enqueue to a suppressed address is rejected with 400.
  */
 @Entity("mail_suppressions")
+@Index("idx_mail_suppressions_email", ["email"], { unique: true })
 export class MailSuppressionEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -29,6 +31,6 @@ export class MailSuppressionEntity {
   @Column({ type: "text", nullable: true })
   detail?: string;
 
-  @CreateDateColumn({ name: "created_at" })
+  @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;
 }
