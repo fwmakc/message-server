@@ -17,13 +17,42 @@ import { AttachmentsMailInterface } from "./interface/attachments.mail.interface
  * bounce type structurally; this heuristic only covers raw SMTP replies.
  */
 export function isHardBounce(err: unknown): boolean {
-  const text = [
+  const text = bounceText(err);
+  return /\b55[0-4]\b/.test(text) || /\b5\.\d{1,3}\.\d{1,3}\b/.test(text);
+}
+
+/**
+ * Suppression-grade hard bounce: a permanent reply that is about THIS
+ * recipient (unknown user / no mailbox), not about our session. A relay
+ * answering `550 Invalid syntax in MAIL command` (empty envelope, bad
+ * auth, relay denied) fails EVERY address on the server — suppressing
+ * them would poison the list for the whole domain after a config fix
+ * (journal №3: the empty-envelope bug 550'd all 300 lab recipients).
+ * Unclassifiable permanent replies stay soft: retries exhaust, the job
+ * lands in failed, nothing enters mail_suppressions.
+ */
+export function isRecipientFatal(err: unknown): boolean {
+  const text = bounceText(err);
+  if (!isHardBounce(err)) return false;
+  if (
+    /(syntax|command|parameter|helo|auth|relay|policy|spam|black.?list|block.?list|dns|tls|timeout|greylist)/i.test(
+      text,
+    )
+  ) {
+    return false;
+  }
+  return /(user|recipient|address|mailbox|unknown|no such|does not exist|disabled|inactive|quota|full)/i.test(
+    text,
+  );
+}
+
+function bounceText(err: unknown): string {
+  return [
     (err as { response?: string })?.response,
     (err as Error)?.message,
   ]
     .filter(Boolean)
     .join(" ");
-  return /\b55[0-4]\b/.test(text) || /\b5\.\d{1,3}\.\d{1,3}\b/.test(text);
 }
 
 @Injectable()
@@ -86,11 +115,13 @@ export class MailWorker extends QueueWorker<MailJobEntity> {
     try {
       await this.mailer.send(mail);
     } catch (err) {
-      if (isHardBounce(err)) {
-        // A 55x/5.x.y reply is definitive: the mailbox will never accept
-        // this letter. Suppress before the retry loop burns the remaining
-        // attempts, and tell the bus (best-effort — the failed job is the
-        // source of truth either way).
+      if (isRecipientFatal(err)) {
+        // A permanent, recipient-scoped reply is definitive: the mailbox
+        // will never accept this letter. Suppress before the retry loop
+        // burns the remaining attempts, and tell the bus (best-effort —
+        // the failed job is the source of truth either way). Infra-scoped
+        // permanent replies (syntax/relay/auth) stay retryable: see
+        // isRecipientFatal.
         await this.suppression
           .add({
             email: d.to,

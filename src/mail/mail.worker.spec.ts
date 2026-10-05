@@ -1,4 +1,4 @@
-import { MailWorker, isHardBounce } from "./mail.worker";
+import { MailWorker, isHardBounce, isRecipientFatal } from "./mail.worker";
 import { MailerAdapter } from "./mailer.adapter";
 import { DomainThrottleService } from "./domain-throttle.service";
 import { MailSuppressionService } from "./mail-suppression.service";
@@ -16,6 +16,27 @@ describe("isHardBounce", () => {
     ["Missing credentials for PLAIN", false],
   ])("classifies %j", (message, hard) => {
     expect(isHardBounce(new Error(message))).toBe(hard);
+  });
+});
+
+describe("isRecipientFatal", () => {
+  it.each([
+    ["550 5.1.1 <a@b.c>: Recipient address rejected", true],
+    ["554 5.1.1 User unknown in virtual mailbox table", true],
+    ["550 5.1.1 No such user here", true],
+    ["550 5.2.1 Mailbox disabled / inactive", true],
+    [
+      // journal №3: an infra-level syntax reply 550s EVERY address —
+      // it must classify as retryable, never suppress
+      "Mail command failed: 550 Invalid syntax in MAIL command",
+      false,
+    ],
+    ["550 Relay denied for this client", false],
+    ["550 Authentication required", false],
+    ["550 Blacklisted by spam policy", false],
+    ["421 4.7.0 Try again later", false],
+  ])("classifies %j", (message, fatal) => {
+    expect(isRecipientFatal(new Error(message))).toBe(fatal);
   });
 });
 
@@ -164,6 +185,20 @@ describe("MailWorker", () => {
       const job = { data: { to: "a@b.com", subject: "X", text: "t" } } as any;
 
       await expect((worker as any).process(job)).rejects.toThrow("421");
+
+      expect(suppression.add).not.toHaveBeenCalled();
+      expect(events.publish).not.toHaveBeenCalled();
+    });
+
+    it("does not suppress on an infra-scoped 550 (empty-envelope regression, journal №3)", async () => {
+      mailer.send = jest
+        .fn()
+        .mockRejectedValue(
+          new Error("Mail command failed: 550 Invalid syntax in MAIL command"),
+        );
+      const job = { data: { to: "a@b.com", subject: "X", text: "t" } } as any;
+
+      await expect((worker as any).process(job)).rejects.toThrow("550");
 
       expect(suppression.add).not.toHaveBeenCalled();
       expect(events.publish).not.toHaveBeenCalled();

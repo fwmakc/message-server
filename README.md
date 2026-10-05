@@ -157,6 +157,14 @@ payloads into the normalized body):
 - `bounce` + `soft` → `mail.bounced` only (rides the normal retry path, never suppressed)
 - `complaint` → suppressed + `mail.complained` published (contracts `event-server/contracts` v1.4.0)
 
+Worker-side SMTP heuristic (`isRecipientFatal`): suppression on a raw 55x
+only when the reply is **recipient-scoped** (user unknown / mailbox disabled /
+quota full). Infra-scoped permanent replies (`550 Invalid syntax in MAIL
+command`, relay denied, auth required, blocklists) stay on the retry path —
+an envelope or configuration bug must not poison the list for every address
+on the relay. Unclassifiable permanent replies also stay retryable: the job
+lands in `failed`, nothing enters `mail_suppressions`.
+
 The bus republication lets other services react (e.g. auth-server deactivating
 a dead account); the suppression list itself is the enforcement point.
 
