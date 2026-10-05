@@ -65,3 +65,43 @@ describe("getMailConfig", () => {
     );
   });
 });
+
+// Journal №3, part 2: the mailer library's compile hook only skips mails
+// that already carry html — a plain-text letter used to crash EjsAdapter on
+// path.extname(undefined). The wrapper must pass templateless mail through
+// untouched and still hand template mail to EJS.
+describe("SkipTemplatelessAdapter (config.template.adapter)", () => {
+  const callback = jest.fn();
+
+  it("passes templateless mail through without touching EJS", async () => {
+    const config = await getMailConfig(
+      configOf({ SMTP_HOST: "m", SMTP_PORT: "1", ROOT_PATH: "/nowhere" }),
+    );
+    callback.mockClear();
+
+    config.template.adapter.compile(
+      { data: { to: "a@b.com", text: "hello" } },
+      callback,
+      config,
+    );
+    // resolved with no error and no template resolution attempt
+    expect(callback).toHaveBeenCalledWith();
+  });
+
+  it("still routes template mail to the EJS adapter", async () => {
+    const config = await getMailConfig(
+      configOf({ SMTP_HOST: "m", SMTP_PORT: "1", ROOT_PATH: "/nowhere" }),
+    );
+    callback.mockClear();
+
+    config.template.adapter.compile(
+      { data: { to: "a@b.com", template: "register" } },
+      callback,
+      config,
+    );
+    // /nowhere/views/mail has no register.ejs — EJS must fail on the
+    // missing file, proving the wrapper did not swallow the call
+    expect(callback).toHaveBeenCalledWith(expect.anything());
+    expect(callback.mock.calls[0][0]).toBeDefined();
+  });
+});

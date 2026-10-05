@@ -2,6 +2,23 @@ import { join } from "path";
 import { ConfigService } from "@nestjs/config";
 import { EjsAdapter } from "@nestjs-modules/mailer/adapters/ejs.adapter";
 
+/**
+ * The mailer library's compile hook short-circuits only mails that already
+ * carry html and hands everything else to the template adapter — so a
+ * plain-text letter crashed EjsAdapter on path.extname(undefined)
+ * (journal №3's "The path argument must be of type string"). Pass
+ * template-less mail straight through; EJS renders only what names a
+ * template.
+ */
+class SkipTemplatelessAdapter {
+  constructor(private readonly inner: EjsAdapter) {}
+
+  compile(mail: any, callback: (err?: Error) => void, mailerOptions: any): void {
+    if (!mail?.data?.template) return callback();
+    return this.inner.compile(mail, callback, mailerOptions);
+  }
+}
+
 export const getMailConfig = async (
   configService: ConfigService,
 ): Promise<any> => {
@@ -35,7 +52,7 @@ export const getMailConfig = async (
     // preview: true,
     template: {
       dir: join(rootPath, "views/mail"),
-      adapter: new EjsAdapter(),
+      adapter: new SkipTemplatelessAdapter(new EjsAdapter()),
       options: {
         // strict: true,
         strict: false,
