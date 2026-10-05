@@ -7,6 +7,7 @@ import { runMigrationsUnderLock } from "api-server-toolkit/db";
 import { MailJobEntity } from "@src/mail/mail-job.entity";
 import { MailDataEntity } from "@src/mail/mail-data.entity";
 import { MailAttachmentEntity } from "@src/mail/mail-attachment.entity";
+import { MailSuppressionEntity } from "@src/mail/mail-suppression.entity";
 import { ProcessedEventEntity } from "@src/webhooks/processed-event.entity";
 
 @Module({
@@ -26,6 +27,7 @@ import { ProcessedEventEntity } from "@src/webhooks/processed-event.entity";
           MailJobEntity,
           MailDataEntity,
           MailAttachmentEntity,
+          MailSuppressionEntity,
           ProcessedEventEntity,
         ],
         // Schema is owned by migrations only (src/typeorm/migrations) — pending
