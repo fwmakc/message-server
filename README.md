@@ -415,13 +415,68 @@ with any frontend framework — your app just triggers events (e.g.,
 
 ---
 
+## Production Notes
+
+Deployment runbook for the whole stack (service registry, secrets, TLS,
+upgrades, scaling, operations): [gateway-server/docs/DEPLOYMENT.md](https://github.com/fwmakc/gateway-server/blob/master/docs/DEPLOYMENT.md).
+
+**Role in the stack.** The only outbound mailer. Receives bus events via
+signed webhooks, enqueues letters into a postgres-backed queue
+(`mail_jobs`), sends with retry/backoff, per-recipient-domain token
+buckets, and a suppression list fed by SMTP hard bounces and provider
+feedback webhooks.
+
+**Wiring.**
+
+- No edge route: nginx answers 404 on `/mail` — the service is reachable
+  from the backend network only. Deliveries arrive at
+  `POST /webhooks/events` (HMAC-verified when `WEBHOOK_SECRET` is set).
+- Subscribes to `user.registered` (confirmation mail) and `password.reset`
+  (reset mail); `mail.bounced` / `mail.complained` are republished on the
+  bus for other services to react to.
+- Sends via SMTP (`smtp(s)://USER:PASSWORD@HOST:PORT` connection URL).
+
+**Production configuration.**
+
+| Concern | Setting |
+|---------|---------|
+| SMTP | compose dev defaults point at MailHog — **set real `SMTP_*` in prod**, otherwise letters accumulate in the queue |
+| Signing | `WEBHOOK_SECRET` (same value as event-server's) — recommended over the legacy internal-key transport |
+| Pacing | `MAIL_CONCURRENCY` (default 4), `MAIL_DOMAIN_RATE_PER_MIN` (off by default; production starting point ~100/min with `MAIL_DOMAIN_RATE_OVERRIDES` for big providers) |
+| Reputation | suppression list + `POST /mail/webhooks/:provider` for SES/Postmark feedback loops |
+
+**Scaling.** The queue is postgres-backed with `SKIP LOCKED` claiming —
+replicas won't double-send. But domain rate buckets are in-process: N
+replicas = N× the per-domain cap (the documented honest limitation). Stay
+at one replica until volume demands more; fleet-wide pacing is a Redis
+upgrade.
+
+**Verified under load** (dates and raw numbers:
+[gateway-server/load-tests/results.md](https://github.com/fwmakc/gateway-server/blob/master/load-tests/results.md)):
+
+- 33 CI tests; full-path e2e (register → email → confirm → login) at 13.4
+  req/s — the deliberate 5 s queue poll dominates, by design.
+- Identity storm (2026-10-08): mail p95 2.6 s across 1000 registrations,
+  0 letters lost.
+- Mailburst: 1000 letters drained at ~21.4 letters/s, 0 lost.
+- Event → queue pipeline: 95.4 events/s ingest with the queue as the
+  intentional bottleneck (~10 mails/s at stock pacing).
+
+**Semantics to accept.** The queue is a pacing device protecting sender
+reputation, not a latency buffer. Hard bounces suppress the recipient
+permanently (enforced at enqueue with a 400) — only recipient-scoped SMTP
+55x replies poison the list; infra-scoped failures stay retryable and
+unclassifiable ones land in `failed` without suppression.
+
+---
+
 ## Versioning
 
 Each service versions **independently** (semver): a `vX.Y.Z` git tag marks the released state of each repo. There is no stack-wide shared major — compatibility is guaranteed by **exact dependency pins**, not by version numbers.
 
 - Repos on `0.x` (toolkit, api/auth/file/message-server, gateway): the minor carries breaking changes while the stack is in development; patch = fixes.
 - `event-server` follows a `1.x` line (stable event-contract surface).
-- Consumers pin sources by tag: `"api-server-toolkit": "github:fwmakc/api-server-toolkit#v0.32.0"`, `"event-server": "github:fwmakc/event-server#v1.5.0"`.
+- Consumers pin sources by tag: `"api-server-toolkit": "github:fwmakc/api-server-toolkit#v0.32.0"`, `"event-server": "github:fwmakc/event-server#v1.6.0"`.
 
 ### Breaking-change procedure
 
@@ -431,16 +486,16 @@ Each service versions **independently** (semver): a `vX.Y.Z` git tag marks the r
 
 ### Current versions
 
-> Synced across all repos on 2026-10-07. Source of truth: the `v*` git tags at each repo HEAD.
+> Synced across all repos on 2026-10-08 (wave 15). Source of truth: the `v*` git tags at each repo HEAD.
 
 | Service | Version |
 |---------|---------|
 | [api-server-toolkit](https://github.com/fwmakc/api-server-toolkit) | v0.32.0 |
-| [event-server](https://github.com/fwmakc/event-server) | v1.5.0 |
-| [auth-server](https://github.com/fwmakc/auth-server) | v0.13.0 |
+| [event-server](https://github.com/fwmakc/event-server) | v1.6.0 |
+| [auth-server](https://github.com/fwmakc/auth-server) | v0.14.0 |
 | [message-server](https://github.com/fwmakc/message-server) | v0.7.0 |
-| [file-server](https://github.com/fwmakc/file-server) | v0.8.1 |
+| [file-server](https://github.com/fwmakc/file-server) | v0.8.3 |
 | [chat-server](https://github.com/fwmakc/chat-server) | v0.1.3 (frozen) |
-| [api-server](https://github.com/fwmakc/api-server) | v0.8.0 |
-| [gateway-server](https://github.com/fwmakc/gateway-server) | v0.6.0 (infra) |
+| [api-server](https://github.com/fwmakc/api-server) | v0.9.0 |
+| [gateway-server](https://github.com/fwmakc/gateway-server) | v0.7.0 (infra) |
 | [api-server-scaffold](https://github.com/fwmakc/api-server-scaffold) | v0.1.5 |
